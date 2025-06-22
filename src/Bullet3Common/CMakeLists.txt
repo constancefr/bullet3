@@ -7,6 +7,7 @@ SET(Bullet3Common_SRCS
 	b3AlignedAllocator.cpp
 	b3Vector3.cpp
 	b3Logging.cpp
+	b3CustomLogger.cpp
 )
 
 SET(Bullet3Common_HDRS
@@ -26,6 +27,7 @@ SET(Bullet3Common_HDRS
 	b3Transform.h
 	b3TransformUtil.h
 	b3Vector3.h
+	b3CustomLogger.h
 	shared/b3Float4.h
 	shared/b3Int2.h
 	shared/b3Int4.h

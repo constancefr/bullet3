@@ -16,6 +16,8 @@ subject to the following restrictions:
 #ifndef BT_NEOHOOKEAN_H
 #define BT_NEOHOOKEAN_H
 
+#include "Bullet3Common/b3CustomLogger.h"
+
 #include "btDeformableLagrangianForce.h"
 #include "LinearMath/btQuickprof.h"
 #include "LinearMath/btImplicitQRSVD.h"
@@ -84,7 +86,10 @@ public:
 	}
 
 	virtual void addScaledForces(btScalar scale, TVStack& force)
-	{
+	{	
+		b3CustomLogger::logEvent("[NeoHookean] Adding scaled forces."); // FOR TESTING
+		printf("FOR TESTING!");
+
 		addScaledDampingForce(scale, force);
 		addScaledElasticForce(scale, force);
 	}
