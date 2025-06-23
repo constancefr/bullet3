@@ -1,5 +1,8 @@
 //#include "D:/dev/VisualLeakDetector/include/vld.h"
 
+//#include "../../src/Bullet3Common/b3CustomLogger.h"
+#include "../../src/Bullet3Common/b3CustomLogger_C_API.h"
+
 #include "../SharedMemory/PhysicsClientC_API.h"
 #include "../SharedMemory/PhysicsDirectC_API.h"
 #include "../SharedMemory/SharedMemoryInProcessPhysicsC_API.h"
@@ -1923,6 +1926,8 @@ static PyObject* pybullet_setPhysicsEngineParameter(PyObject* self, PyObject* ar
 static PyObject* pybullet_loadURDF(PyObject* self, PyObject* args, PyObject* keywds)
 {
 	printf("LOADING URDF!");
+	b3LogEvent("test log.");
+
 	int physicsClientId = 0;
 	int flags = 0;
 
