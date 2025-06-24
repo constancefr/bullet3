@@ -1,6 +1,5 @@
 //#include "D:/dev/VisualLeakDetector/include/vld.h"
 
-//#include "../../src/Bullet3Common/b3CustomLogger.h"
 #include "../../src/Bullet3Common/b3CustomLogger_C_API.h"
 
 #include "../SharedMemory/PhysicsClientC_API.h"

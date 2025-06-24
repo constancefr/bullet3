@@ -9,6 +9,7 @@ SET(Bullet3Common_SRCS
 	b3Logging.cpp
 	b3CustomLogger.cpp
 	b3CustomLogger_C_API.cpp
+	b3EventDetector.cpp
 )
 
 SET(Bullet3Common_HDRS
@@ -30,6 +31,7 @@ SET(Bullet3Common_HDRS
 	b3Vector3.h
 	b3CustomLogger.h
 	b3CustomLogger_C_API.h
+	b3EventDetector.h
 	shared/b3Float4.h
 	shared/b3Int2.h
 	shared/b3Int4.h
