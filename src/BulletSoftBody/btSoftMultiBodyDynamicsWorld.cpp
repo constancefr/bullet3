@@ -105,6 +105,7 @@ void btSoftMultiBodyDynamicsWorld::internalSingleStepSimulation(btScalar timeSte
 		btSoftBody* psb = (btSoftBody*)m_softBodies[i];
 		psb->interpolateRenderMesh();
 	}
+
 	// End solver-wise simulation step
 	// ///////////////////////////////
 }

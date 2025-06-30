@@ -416,7 +416,7 @@ public:
 	struct SContact
 	{
 		Node* m_node;         // Node
-		Face* m_face;         // Face
+		Face* m_face;         // Face (of other body in contact)
 		btVector3 m_weights;  // Weigths
 		btVector3 m_normal;   // Normal
 		btScalar m_margin;    // Margin

@@ -14,6 +14,9 @@ subject to the following restrictions:
 */
 ///btSoftBody implementation by Nathanael Presson
 
+#include "Bullet3Common/b3EventDetector.h"
+extern b3EventDetector gEventDetector; // global
+
 #include "btSoftBodyInternals.h"
 #include "BulletSoftBody/btSoftBodySolvers.h"
 #include "btSoftBodyData.h"
@@ -2745,6 +2748,7 @@ btVector3 btSoftBody::evaluateCom() const
 	return (com);
 }
 
+// OF INTEREST???
 bool btSoftBody::checkContact(const btCollisionObjectWrapper* colObjWrap,
 							  const btVector3& x,
 							  btScalar margin,
@@ -2768,6 +2772,13 @@ bool btSoftBody::checkContact(const btCollisionObjectWrapper* colObjWrap,
 		cti.m_colObj = colObjWrap->getCollisionObject();
 		cti.m_normal = wtr.getBasis() * nrm;
 		cti.m_offset = -btDot(cti.m_normal, x - cti.m_normal * dst);
+		// ADDITIONS --------------------------------
+		//bool inContact = (psb->m_scontacts.size() > 0);
+		/*printf("Is in contact!\n");
+		std::cout << "Is in contact!\n";*/
+
+		//gEventDetector.setBodyContacting(psb, inContact);
+		// ------------------------------------------
 		return (true);
 	}
 	return (false);
@@ -2799,8 +2810,16 @@ bool btSoftBody::checkDeformableContact(const btCollisionObjectWrapper* colObjWr
 		cti.m_normal = wtr.getBasis() * nrm;
 		cti.m_offset = dst;
 	}
-	if (dst < 0)
+	if (dst < 0) {
+		// ADDITIONS --------------------------------
+		//bool inContact = (psb->m_scontacts.size() > 0);
+		/*printf("Is in contact!\n");
+		std::cout << "Is in contact!\n";*/
+
+		//gEventDetector.setBodyContacting(psb, inContact);
+		// ------------------------------------------
 		return true;
+	}
 	return (false);
 }
 
@@ -2869,8 +2888,14 @@ bool btSoftBody::checkDeformableFaceContact(const btCollisionObjectWrapper* colO
 				margin);
 			if (local_dst < dst)
 			{
-				if (local_dst < 0 && predict)
+				if (local_dst < 0 && predict) {
+					// ADDITIONS --------------------------------
+					printf("(1) Is in contact!\n");
+					//printf("m_scontacts: %d\n", this->m_scontacts);
+					gEventDetector.setContacting(this, true);
+					// ------------------------------------------
 					return true;
+				}
 				dst = local_dst;
 				contact_point = p;
 				bary = m_quads[q];
@@ -2896,8 +2921,13 @@ bool btSoftBody::checkDeformableFaceContact(const btCollisionObjectWrapper* colO
 	const btConvexShape* csh = static_cast<const btConvexShape*>(shp);
 	btGjkEpaSolver2::SignedDistance(&triangle, triangle_transform, csh, wtr, guess, results);
 	dst = results.distance - 2.0 * csh->getMargin() - margin;  // margin padding so that the distance = the actual distance between face and rigid - margin of rigid - margin of deformable
-	if (dst >= 0)
+	if (dst >= 0) {
+		// ADDITIONS --------------------------------
+		//printf("Is no longer in contact?\n");
+		//gEventDetector.updateContactState(this, false);
+		// ------------------------------------------
 		return false;
+	}
 
 	// Use consistent barycenter to recalculate distance.
 	if (this->m_cacheBarycenter)
@@ -2921,6 +2951,13 @@ bool btSoftBody::checkDeformableFaceContact(const btCollisionObjectWrapper* colO
 			btGjkEpaSolver2::SignedDistance(&triangle2, triangle_transform, csh, wtr, guess, results);
 
 			dst = results.distance - csh->getMargin() - margin;
+
+			// ADDITIONS --------------------------------
+			printf("(2) Is in contact!\n");
+			//printf("m_scontacts: %d\n", this->m_scontacts);
+			gEventDetector.setContacting(this, true);
+			// ------------------------------------------
+
 			return true;
 		}
 	}
@@ -2940,6 +2977,13 @@ bool btSoftBody::checkDeformableFaceContact(const btCollisionObjectWrapper* colO
 	cti.m_colObj = colObjWrap->getCollisionObject();
 	cti.m_normal = results.normal;
 	cti.m_offset = dst;
+
+	// ADDITIONS --------------------------------
+	//printf("(3) Is in contact!\n");
+	//printf("m_scontacts: %d\n", this->m_scontacts.size());
+	gEventDetector.setContacting(this, true);
+	// ------------------------------------------
+
 	return true;
 }
 
@@ -3348,6 +3392,13 @@ void btSoftBody::updateClusters()
 			}
 		}
 	}
+
+	//// ADDITIONS --------------------------------
+	//bool inContact = (m_scontacts.size() > 0);
+	//printf("Is in contact: %s", inContact ? "true" : "false");
+
+	//gEventDetector.setBodyContacting(this, inContact);
+	//// ------------------------------------------
 }
 
 //
@@ -3533,7 +3584,7 @@ static btScalar Dot4(const btVector4& a, const btVector4& b)
 void btSoftBody::updateDeformation()
 {
 	btQuaternion q;
-	for (int i = 0; i < m_tetras.size(); ++i)
+	for (int i = 0; i < m_tetras.size(); ++i) // loops through all tets
 	{
 		btSoftBody::Tetra& t = m_tetras[i];
 		btVector3 c1 = t.m_n[1]->m_q - t.m_n[0]->m_q;
@@ -3545,7 +3596,19 @@ void btSoftBody::updateDeformation()
 		t.m_F = Ds * t.m_Dm_inverse;
 
 		btSoftBody::TetraScratch& s = m_tetraScratches[i];
-		s.m_F = t.m_F;
+		s.m_F = t.m_F; // updates deformation gradient
+
+		// ADDITIONS --------------------------------
+		gEventDetector.resetCurrentWholeBodyDeformation(this);
+		gEventDetector.updateDeformationEvent(this, i, t.m_F); // this = current btSoftBody, i = current tet index
+
+		// REMOVE THIS (checks for event for each tet rather than per object)
+		//std::string event = gEventDetector.checkForEvent();
+		//if (!event.empty()) {
+		//	printf("[Event] %s\n", event.c_str()); // TODO: change to call logger
+		//}
+		// ------------------------------------------
+
 		s.m_J = t.m_F.determinant();
 		btMatrix3x3 C = t.m_F.transpose() * t.m_F;
 		s.m_trace = C[0].getX() + C[1].getY() + C[2].getZ();
@@ -3566,6 +3629,22 @@ void btSoftBody::updateDeformation()
 		btMatrix3x3 Q(q);
 		s.m_corotation = Q;
 	}
+
+	//// ADDITIONS --------------------------------
+	//bool inContact = (m_scontacts.size() > 0);
+	//printf("Is in contact: %s\n", inContact ? "true" : "false");
+
+	//gEventDetector.setBodyContacting(this, inContact);
+	//// ------------------------------------------
+	
+	// ADDITIONS --------------------------------
+
+	std::string event = gEventDetector.checkForEvent();
+	if (!event.empty()) {
+		printf("%s", event.c_str()); // TODO: replace with call to logger
+	}
+	// ------------------------------------------
+
 }
 
 void btSoftBody::advanceDeformation()
@@ -3963,9 +4042,16 @@ void btSoftBody::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 			}
 		}
 	}
+
+	//// ADDITIONS --------------------------------
+	//bool inContact = (psb->m_scontacts.size() > 0);
+	//printf("Is in contact: %s", inContact ? "true" : "false");
+
+	//gEventDetector.setBodyContacting(psb, inContact);
+	//// ------------------------------------------
 }
 
-//
+// OF INTEREST???
 void btSoftBody::PSolve_SContacts(btSoftBody* psb, btScalar, btScalar ti)
 {
 	BT_PROFILE("PSolve_SContacts");
@@ -3998,6 +4084,13 @@ void btSoftBody::PSolve_SContacts(btSoftBody* psb, btScalar, btScalar ti)
 		f.m_n[1]->m_x -= corr * (c.m_cfm[1] * c.m_weights.y());
 		f.m_n[2]->m_x -= corr * (c.m_cfm[1] * c.m_weights.z());
 	}
+
+	//// ADDITIONS --------------------------------
+	//bool inContact = (psb->m_scontacts.size() > 0);
+	//printf("Is in contact: %s", inContact ? "true" : "false");
+
+	//gEventDetector.setBodyContacting(psb, inContact);
+	//// ------------------------------------------
 }
 
 //

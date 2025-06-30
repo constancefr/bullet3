@@ -77,6 +77,7 @@ void btSoftRigidDynamicsWorld::predictUnconstraintMotion(btScalar timeStep)
 
 void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 {
+
 	// Let the solver grab the soft bodies and if necessary optimize for it
 	m_softBodySolver->optimize(getSoftBodyArray());
 

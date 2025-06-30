@@ -33,6 +33,9 @@ Call internalStepSimulation multiple times, to achieve 240Hz (4 steps of 60Hz).
 The algorithm also closely resembles the one in http://physbam.stanford.edu/~fedkiw/papers/stanford2008-03.pdf
  */
 
+#include "Bullet3Common/b3EventDetector.h"
+extern b3EventDetector gEventDetector; // global
+
 #include <stdio.h>
 #include "btDeformableMultiBodyDynamicsWorld.h"
 #include "DeformableBodyInplaceSolverIslandCallback.h"
@@ -111,6 +114,11 @@ void btDeformableMultiBodyDynamicsWorld::internalSingleStepSimulation(btScalar t
 	btMultiBodyDynamicsWorld::updateActions(timeStep);
 
 	updateActivationState(timeStep);
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+	//printf("IN btDeformableMultiBodyDynamicsWorld.cpp -> internalSingleStepSimulation\n");
+
 	// End solver-wise simulation step
 	// ///////////////////////////////
 }
@@ -678,6 +686,13 @@ void btDeformableMultiBodyDynamicsWorld::removeCollisionObject(btCollisionObject
 
 int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
 {
+	// ADDITION: clear contact flags before updates inside sim step ----------------
+	for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
+		gEventDetector.setContacting(m_softBodies[i], false);
+	}
+	// -----------------------------------------------------------------------------
+
+
 	startProfiling(timeStep);
 
 	int numSimulationSubSteps = 0;
@@ -736,6 +751,14 @@ int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int ma
 	}
 
 	clearForces();
+
+	// ADDITION: detect contact event (contact starts, ends or continues) ----------
+	for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
+		gEventDetector.detectContactEvent(m_softBodies[i]);
+	}
+	// -----------------------------------------------------------------------------
+
+
 
 #ifndef BT_NO_PROFILE
 	CProfileManager::Increment_Frame_Counter();
