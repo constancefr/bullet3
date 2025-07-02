@@ -1,5 +1,8 @@
 #include "b3EventDetector.h"
 #include "BulletSoftBody/btSoftBody.h"
+#include "BulletCollision/CollisionDispatch/btCollisionObject.h"
+#include "../examples/SharedMemory/PhysicsServerCommandProcessor.h"
+#include "../examples/SharedMemory/PhysicsServerSharedMemory.h"
 #include <sstream>
 #include <cmath>
 #include <iostream>
@@ -8,28 +11,14 @@ b3EventDetector gEventDetector; // define global instance
 
 b3EventDetector::b3EventDetector() {}
 
+//b3EventDetector::b3EventDetector(const PhysicsServerCommandProcessor* physicsServer) 
+    //: m_physicsServer(physicsServer)
+//{}
+
+
 void b3EventDetector::resetCurrentWholeBodyDeformation(const btSoftBody* sb) {
     m_bodyDeformationRecord[sb].currentWholeBodyDeformation = 0.0;
 }
-
-//ContactState b3EventDetector::checkContactState(const btSoftBody* sb, bool inContactNow) {
-//    ContactState contactState;
-//    auto& record = m_bodyDeformationRecord[sb];
-//
-//    if (inContactNow && !record.inContact) { // new contact begins
-//        contactState = ContactState::STARTS;
-//    }
-//    else if (!inContactNow && record.inContact) { // contact ends
-//        contactState = ContactState::ENDS;
-//    }
-//    else {
-//        contactState = ContactState::CONTINUES;
-//    }
-//
-//    record.inContact = inContactNow;
-//
-//    return contactState;
-//}
 
 void b3EventDetector::setContacting(const btSoftBody* sb, bool isContacting) {
     m_bodyDeformationRecord[sb].isContacting = isContacting;
@@ -39,26 +28,14 @@ ContactState b3EventDetector::detectContactEvent(const btSoftBody* sb) {
     ContactState contactState;
     auto& record = m_bodyDeformationRecord[sb];
 
-    //if (isContacting && !record.isContacting) { // new contact begins
     if (record.isContacting && !record.wasContacting) { // new contact begins
         contactState = ContactState::STARTS;
-        record.hasLogged = false;
-
-        printf("CONTACT BEGINS!\n");
     }
-    //else if (!isContacting && record.isContacting) { // contact ends
     else if (!record.isContacting && record.wasContacting) { // contact ends
         contactState = ContactState::ENDS;
-        record.hasLogged = false;
-
-        printf("CONTACT ENDS!\n");
     }
     else {
         contactState = ContactState::CONTINUES;
-
-        //printf("CONTACT CONTINUES!\n");
-
-        // HOW TO UPDATE record.hasLogged HERE??
     }
 
     record.wasContacting = record.isContacting;
@@ -67,10 +44,7 @@ ContactState b3EventDetector::detectContactEvent(const btSoftBody* sb) {
 }
 
 void b3EventDetector::updateDeformationEvent(const btSoftBody* sb, int tetIndex, const btMatrix3x3& F) {
-    //m_currentWholeBodyDeformation[sb] += calculateTetDeformation(F);
     m_bodyDeformationRecord[sb].currentWholeBodyDeformation += calculateTetDeformation(F);
-
-    //m_bodyDeformationRecord[sb].isContacting = true; // TODO: placeholder for now, remove once contact detection implemented!
 }
 
 btScalar b3EventDetector::calculateTetDeformation(const btMatrix3x3& F) const {
@@ -96,47 +70,62 @@ btScalar b3EventDetector::calculateTetDeformation(const btMatrix3x3& F) const {
 }
 
 std::string b3EventDetector::checkForEvent() {
-    // TODO:
-    // - finish event detection logic (stable deformation, contact)
-    // - decide on templates
-    // - get object names to include in trace
-
     std::string output;
 
-    // IS THE LOOP NECESSARY??
     // iterates through bodies in database
     for (auto it = m_bodyDeformationRecord.begin(); it != m_bodyDeformationRecord.end(); ++it) {
-        const btSoftBody* body = it->first;
-        auto& record = m_bodyDeformationRecord[body]; // retrieve this body's record
-        btScalar currentWholeBodyDeformation = record.currentWholeBodyDeformation;
+        const btSoftBody* sb = it->first;
+        auto& record = m_bodyDeformationRecord[sb]; // retrieve this body's record
+        //std::string objName = gObjectNames[sb];
+        std::string objName = "?";
 
-        //std::cout << "currentWholeBodyDeformation: " << currentWholeBodyDeformation << "\n";
-        //std::cout << "lastWholeBodyDeformation: " << record.lastWholeBodyDeformation << "\n";
+        DeformationLevel peakLevel = classifyDeformation(record.peakDeformation);
 
-        //if (!record.isContacting) continue; // TODO: check contact detection logic
+        // 1. Check for contact event
+        ContactState contactState = detectContactEvent(sb);
+        if (contactState == ContactState::STARTS) {
+            output += "[Event] <" + objName + "> enters contact with <plane>.\n";
+        }
+        else if (contactState == ContactState::ENDS) {
 
-        // detect peak deformation to log event
-        if (currentWholeBodyDeformation < record.lastWholeBodyDeformation && !record.hasLogged) {
-            btScalar peak = record.lastWholeBodyDeformation;
-            DeformationLevel level = classifyDeformation(peak);
+            std::cout << "PEAK DEFORMATION: " << record.peakDeformation << "\n";
 
-            output += "[Event] <object> undergoes "
-                + makeDeformationString(level)
+            output += "[Event] <" + objName + "> separates from <plane> after contact with "
+                + makeDeformationString(peakLevel)
                 + " deformation.\n";
 
-            record.hasLogged = true;
+            record.peakDeformation = 0.0; // reset
+        }
+        else if (contactState == ContactState::CONTINUES && record.stableCount > 3) { // determine stable count threshold empirically
+            output += "[Event] <" + objName + "> comes to a rest on <plane> with "
+                + makeDeformationString(peakLevel)
+                + " deformation.\n";
         }
 
-        record.lastWholeBodyDeformation = currentWholeBodyDeformation;
+        // 2. Update deformation peak
+        if (record.currentWholeBodyDeformation > record.peakDeformation 
+            && record.isContacting) {
 
-        // TODO: change logic below to reset after a deformation peak when contact ends!!
-        // (not just when deformation returns to 0, since that may not happen)
-        // 
-        // reset for next event
-        if (currentWholeBodyDeformation < 1e-4) {
-            record.hasLogged = false;
-            record.peakDeformation = 0.0;
+            record.peakDeformation = record.currentWholeBodyDeformation;
         }
+
+        /*if (record.currentWholeBodyDeformation < record.lastWholeBodyDeformation && record.isContacting) {
+            std::cout << "Deformation is decreasing!\n";
+            std::cout << "current deform: " << record.currentWholeBodyDeformation << "\n";
+            std::cout << "last deform: " << record.lastWholeBodyDeformation << "\n";
+        }*/
+
+        //else if (record.currentWholeBodyDeformation == record.lastWholeBodyDeformation) {
+        if (abs(record.currentWholeBodyDeformation - record.lastWholeBodyDeformation) < 0.1
+            && record.isContacting) {
+            record.stableCount++;
+        }
+        else {
+            record.stableCount = 0; // reset
+        }
+
+        record.lastWholeBodyDeformation = record.currentWholeBodyDeformation;
+
     }
 
     return output;
@@ -167,4 +156,33 @@ std::string b3EventDetector::makeDeformationString(DeformationLevel level) const
     case DeformationLevel::VERY_HIGH: return "very high";
     default: return "unknown";
     }
+}
+
+void b3EventDetector::setCommandProcessor(PhysicsServerCommandProcessor* proc) {
+    m_commandProcessor = proc;
+}
+
+/*
+std::string b3EventDetector::getObjectName(int bodyUniqueId) const {
+    const PhysicsServerCommandProcessorInternalData* data = m_commandProcessor->getInternalData();
+
+    if (!data) {
+        return "unknown";
+    }
+
+    const UserDataHandleMap& 
+
+
+    
+    // auto it = gObjectNames.find(obj);
+    // if (it != gObjectNames.end()) {
+    //    return it->second;
+    // }
+    // return "?";
+    
+}
+*/
+
+void b3EventDetector::setObjectName(const btCollisionObject* obj, const std::string& name) {
+    gObjectNames[obj] = name;
 }

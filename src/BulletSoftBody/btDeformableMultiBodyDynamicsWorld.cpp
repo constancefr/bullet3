@@ -33,6 +33,7 @@ Call internalStepSimulation multiple times, to achieve 240Hz (4 steps of 60Hz).
 The algorithm also closely resembles the one in http://physbam.stanford.edu/~fedkiw/papers/stanford2008-03.pdf
  */
 
+#include "../examples/SharedMemory/PhysicsServerCommandProcessor.h"
 #include "Bullet3Common/b3EventDetector.h"
 extern b3EventDetector gEventDetector; // global
 
@@ -686,12 +687,44 @@ void btDeformableMultiBodyDynamicsWorld::removeCollisionObject(btCollisionObject
 
 int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
 {
-	// ADDITION: clear contact flags before updates inside sim step ----------------
-	for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
-		gEventDetector.setContacting(m_softBodies[i], false);
-	}
-	// -----------------------------------------------------------------------------
 
+	// ADDITION: clear contact flags and deformation before updates inside sim step ----------------
+	//for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
+	//	btSoftBody* sb = m_softBodies[i];
+	//	gEventDetector.setContacting(sb, false);
+	//}
+	
+	// ASSIGNING OBJECT NAMES ----------------------------------------------------------------------
+	if (gEventDetector.firstStep == true) {
+		btCollisionObjectArray& objects = getCollisionObjectArray();
+
+		for (int i = 0; i < objects.size(); ++i) {
+			btCollisionObject* obj = objects[i];
+			if (!obj) continue;
+
+			if (btSoftBody* sb = btSoftBody::upcast(obj)) { // CHECK IF WORKS
+				gEventDetector.setContacting(sb, false); // clear contact flags and deformation before updates inside sim step
+			}
+
+			int bodyUniqueId = -1;
+			bodyUniqueId = obj->getUserIndex(); // user index == body unique id ??
+			
+			if (bodyUniqueId >= 0 && m_server) {
+				std::string name = m_server->getBodyName(bodyUniqueId);
+				gEventDetector.setObjectName(obj, name);
+
+				printf("Object name: %s\n", name.c_str());
+			}
+
+			//printf("Object type: %d\n", obj->getInternalType());
+			//printf("User index: %d\n", bodyUniqueId);
+			//printf("User pointer type: %s\n", typeid(obj->getUserPointer()).name());
+		}
+	}
+
+	gEventDetector.firstStep = false;
+
+	// ---------------------------------------------------------------------------------------------
 
 	startProfiling(timeStep);
 
@@ -752,9 +785,14 @@ int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int ma
 
 	clearForces();
 
+
 	// ADDITION: detect contact event (contact starts, ends or continues) ----------
 	for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
-		gEventDetector.detectContactEvent(m_softBodies[i]);
+		std::string event = gEventDetector.checkForEvent();
+
+		if (!event.empty()) {
+			printf("%s", event.c_str()); // TODO: replace with call to logger
+		}
 	}
 	// -----------------------------------------------------------------------------
 

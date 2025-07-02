@@ -26,6 +26,10 @@
 #include <functional>
 typedef btAlignedObjectArray<btSoftBody*> btSoftBodyArray;
 
+// ADDITION: forward declaration ---------------------------------------------------------------------------------
+class PhysicsServerCommandProcessor;
+// ---------------------------------------------------------------------------------------------------------------
+
 class btDeformableBodySolver;
 class btDeformableLagrangianForce;
 struct MultiBodyInplaceSolverIslandCallback;
@@ -70,6 +74,10 @@ protected:
 
 public:
 	btDeformableMultiBodyDynamicsWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btDeformableMultiBodyConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btDeformableBodySolver* deformableBodySolver = 0);
+
+	// ADDITION: pointer to the server ----------------------------------------------------------------------
+	PhysicsServerCommandProcessor* m_server = nullptr;
+	// ------------------------------------------------------------------------------------------------------
 
 	virtual int stepSimulation(btScalar timeStep, int maxSubSteps = 1, btScalar fixedTimeStep = btScalar(1.) / btScalar(60.));
 

@@ -3639,10 +3639,10 @@ void btSoftBody::updateDeformation()
 	
 	// ADDITIONS --------------------------------
 
-	std::string event = gEventDetector.checkForEvent();
-	if (!event.empty()) {
-		printf("%s", event.c_str()); // TODO: replace with call to logger
-	}
+	//std::string event = gEventDetector.checkForEvent();
+	//if (!event.empty()) {
+		//printf("%s", event.c_str()); // TODO: replace with call to logger
+	//}
 	// ------------------------------------------
 
 }

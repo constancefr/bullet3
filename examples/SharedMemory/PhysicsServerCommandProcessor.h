@@ -25,6 +25,12 @@ class PhysicsServerCommandProcessor : public CommandProcessorInterface
 	class btDeformableMultiBodyDynamicsWorld* getDeformableWorld();
 	class btSoftMultiBodyDynamicsWorld* getSoftWorld();
 
+// ADDITION: accessor method for m_data ------------------------------------------
+public:
+	//const struct PhysicsServerCommandProcessorInternalData* getInternalData() const { return m_data; }
+	std::string getBodyName(int bodyUniqueId) const;
+// -------------------------------------------------------------------------------
+
 protected:
 	bool processStateLoggingCommand(const struct SharedMemoryCommand& clientCmd, struct SharedMemoryStatus& serverStatusOut, char* bufferServerToClient, int bufferSizeInBytes);
 	bool processRequestCameraImageCommand(const struct SharedMemoryCommand& clientCmd, struct SharedMemoryStatus& serverStatusOut, char* bufferServerToClient, int bufferSizeInBytes);

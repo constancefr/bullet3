@@ -15,7 +15,7 @@ struct SharedMemoryUserData
 	int m_linkIndex;
 	int m_visualShapeIndex;
 
-	btAlignedObjectArray<char> m_bytes;
+	btAlignedObjectArray<char> m_bytes; // raw value
 
 	SharedMemoryUserData()
 		: m_type(-1), m_bodyUniqueId(-1), m_linkIndex(-1), m_visualShapeIndex(-1)

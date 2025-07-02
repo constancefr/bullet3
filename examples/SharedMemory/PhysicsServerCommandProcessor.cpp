@@ -2684,6 +2684,30 @@ struct ProgrammaticUrdfInterface : public URDFImporterInterface
 	}
 };
 
+// ADDITION: body name accessor ----------------------------------------------------------------------------------
+std::string PhysicsServerCommandProcessor::getBodyName(int bodyUniqueId) const
+{
+	// Iterate over all user data entries
+	for (int i = 0; i < m_data->m_userDataHandles.getNumHandles(); ++i)
+	{
+		SharedMemoryUserData* userData = m_data->m_userDataHandles.getHandle(i);
+		if (userData && userData->m_bodyUniqueId == bodyUniqueId && userData->m_key == "name")
+		{
+			if (userData->m_bytes.size() > 0)
+			{
+				return std::string(&userData->m_bytes[0], userData->m_bytes.size());
+			}
+			else
+			{
+				return "";
+			}
+		}
+	}
+	// fallback
+	return "unknown";
+}
+// ---------------------------------------------------------------------------------------------------------------
+
 btDeformableMultiBodyDynamicsWorld* PhysicsServerCommandProcessor::getDeformableWorld()
 {
 	btDeformableMultiBodyDynamicsWorld* world = 0;
@@ -2745,6 +2769,11 @@ void PhysicsServerCommandProcessor::createEmptyDynamicsWorld(int flags)
 		m_data->m_solver = solver;
 		solver->setDeformableSolver(m_data->m_deformablebodySolver);
 		m_data->m_dynamicsWorld = new btDeformableMultiBodyDynamicsWorld(m_data->m_dispatcher, m_data->m_broadphase, solver, m_data->m_collisionConfiguration, m_data->m_deformablebodySolver);
+		
+		// ADDITION: assign server pointer ------------------------------------------------------------------------
+		static_cast<btDeformableMultiBodyDynamicsWorld*>(m_data->m_dynamicsWorld)->m_server = this;
+		printf("m_server ADDED!!");
+		// --------------------------------------------------------------------------------------------------------
 	}
 	else if (flags & RESET_USE_REDUCED_DEFORMABLE_WORLD)
 	{
