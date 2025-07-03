@@ -695,7 +695,10 @@ void btDeformableMultiBodyDynamicsWorld::removeCollisionObject(btCollisionObject
 int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
 {
 	// ADDITIONS: assigning object names -----------------------------------------------------------
-	if (gEventDetector.firstStep == true) {
+	if (gEventDetector.firstStep) {
+		gEventDetector.setDynamicsWorld(this);
+		gEventDetector.firstStep = false;
+
 		btCollisionObjectArray& objects = getCollisionObjectArray();
 
 		for (int i = 0; i < objects.size(); ++i) {
@@ -708,8 +711,10 @@ int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int ma
 			if (bodyUniqueId >= 0 && m_server) {
 				std::string name = m_server->getBodyName(bodyUniqueId);
 				gEventDetector.setObjectName(obj, name);
+				obj->setUserPointer((void*)obj); // identifying pointer for later retrieval
 
-				printf("Object name: %s\n", name.c_str());
+				//printf("Object name: %s\n", name.c_str());
+				printf("Object name: %s\n", gEventDetector.gObjectNames[obj]);
 			}
 		}
 	}
@@ -720,7 +725,6 @@ int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int ma
 		gEventDetector.setContacting(sb, false);
 	}
 
-	gEventDetector.firstStep = false;
 	// ---------------------------------------------------------------------------------------------
 
 	startProfiling(timeStep);

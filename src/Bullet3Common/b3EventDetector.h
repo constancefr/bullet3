@@ -2,7 +2,9 @@
 #define B3_EVENT_DETECTOR_H
 
 #include "LinearMath/btMatrix3x3.h" // for deformation matrix F
-#include "BulletSoftBody/btSoftBody.h" // to access members of btSoftBody
+#include "BulletCollision/CollisionDispatch/btCollisionWorld.h" // to access members of btCollisionWorld
+//#include "BulletSoftBody/btSoftBody.h" // to access members of btSoftBody
+//#include <btBulletCollisionCommon.h>
 #include <string>
 #include <unordered_map> // store key-value pairs
 #include <utility>
@@ -12,6 +14,7 @@ class btSoftBody;
 class btCollisionObject;
 class PhysicsServerCommandProcessor;
 class btDynamicsWorld;
+class btDeformableMultiBodyDynamicsWorld;
 
 enum class DeformationLevel {
 	NO,
@@ -25,7 +28,8 @@ enum class DeformationLevel {
 enum class ContactState {
 	STARTS,
 	CONTINUES,
-	ENDS
+	ENDS,
+	NO_CONTACT
 };
 
 class b3EventDetector {
@@ -59,9 +63,12 @@ public:
 
 	std::string getObjectName(const btCollisionObject* obj) const;
 
-	void setDynamicsWorld(btDynamicsWorld* world);
+	void setDynamicsWorld(btDeformableMultiBodyDynamicsWorld* world);
 
-	const btSoftBody::tRContactArray& getSoftBodyContacts(const btSoftBody* softBody) const;
+	btDeformableMultiBodyDynamicsWorld* m_dynamicsWorld;
+	//btDynamicsWorld* m_dynamicsWorld;
+
+	//const btSoftBody::tRContactArray& getSoftBodyContacts(const btSoftBody* softBody) const;
 
 
 
@@ -93,7 +100,7 @@ private:
 
 	// main object deformation database
 	//std::unordered_map<const btSoftBody*, ObjectRecord> m_bodyDeformationRecord;
-	std::unordered_map<const btSoftBody*, ObjectRecord> m_objectRecords;
+	std::unordered_map<const btCollisionObject*, ObjectRecord> m_objectRecords;
 
 	btScalar calculateTetDeformation(const btMatrix3x3& F) const;
 
@@ -103,12 +110,25 @@ private:
 
 	PhysicsServerCommandProcessor* m_commandProcessor = nullptr;
 
-	btDynamicsWorld* m_dynamicsWorld = nullptr;
-
-
 
 };
 
+class b3ContactReporter : public btCollisionWorld::ContactResultCallback {
+public:
+	std::vector<std::pair<const btCollisionObject*, const btCollisionObject*>> contacts;
+
+	btScalar addSingleResult(btManifoldPoint& cp,
+		const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0,
+		const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
+	{
+		const btCollisionObject* obj0 = colObj0Wrap->getCollisionObject();
+		const btCollisionObject* obj1 = colObj1Wrap->getCollisionObject();
+
+		contacts.push_back(std::make_pair(obj0, obj1));
+		printf("Contact detected between %p and %p\n", obj0, obj1);
+		return 0.f;
+	}
+};
 
 extern b3EventDetector gEventDetector; // declare global object
 

@@ -2767,6 +2767,8 @@ void PhysicsServerCommandProcessor::createEmptyDynamicsWorld(int flags)
 	if (flags & RESET_USE_DEFORMABLE_WORLD)
 	{
 		// deformable
+		printf("THIS HAPPENS!\n");
+
 		m_data->m_deformablebodySolver = new btDeformableBodySolver();
 		btDeformableMultiBodyConstraintSolver* solver = new btDeformableMultiBodyConstraintSolver;
 		m_data->m_solver = solver;
@@ -2775,7 +2777,7 @@ void PhysicsServerCommandProcessor::createEmptyDynamicsWorld(int flags)
 		
 		// ADDITION: assign m_server and m_dynamics pointers ------------------------------------------------------
 		static_cast<btDeformableMultiBodyDynamicsWorld*>(m_data->m_dynamicsWorld)->m_server = this;
-		gEventDetector.setDynamicsWorld(m_data->m_dynamicsWorld);
+		gEventDetector.setDynamicsWorld(static_cast<btDeformableMultiBodyDynamicsWorld*>(m_data->m_dynamicsWorld));
 		// --------------------------------------------------------------------------------------------------------
 	}
 	else if (flags & RESET_USE_REDUCED_DEFORMABLE_WORLD)
