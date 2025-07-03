@@ -2,13 +2,16 @@
 #define B3_EVENT_DETECTOR_H
 
 #include "LinearMath/btMatrix3x3.h" // for deformation matrix F
+#include "BulletSoftBody/btSoftBody.h" // to access members of btSoftBody
 #include <string>
 #include <unordered_map> // store key-value pairs
 #include <utility>
 
 class btSoftBody;
+//class btSoftBody::tRContactArray;
 class btCollisionObject;
 class PhysicsServerCommandProcessor;
+class btDynamicsWorld;
 
 enum class DeformationLevel {
 	NO,
@@ -52,11 +55,13 @@ public:
 
 	std::unordered_map<const btCollisionObject*, std::string> gObjectNames;
 
-	//std::string getObjectName(int bodyUniqueId) const;
-
 	void setObjectName(const btCollisionObject* obj, const std::string& name);
 
-	//const PhysicsServerCommandProcessor* m_physicsServer;
+	std::string getObjectName(const btCollisionObject* obj) const;
+
+	void setDynamicsWorld(btDynamicsWorld* world);
+
+	const btSoftBody::tRContactArray& getSoftBodyContacts(const btSoftBody* softBody) const;
 
 
 
@@ -77,6 +82,7 @@ private:
 	};
 
 	struct ObjectRecord {
+		bool isDeformable = false;
 		btScalar currentWholeBodyDeformation = 0.0;
 		btScalar lastWholeBodyDeformation = 0.0;
 		btScalar peakDeformation = 0.0;
@@ -86,7 +92,8 @@ private:
 	};
 
 	// main object deformation database
-	std::unordered_map<const btSoftBody*, ObjectRecord> m_bodyDeformationRecord;
+	//std::unordered_map<const btSoftBody*, ObjectRecord> m_bodyDeformationRecord;
+	std::unordered_map<const btSoftBody*, ObjectRecord> m_objectRecords;
 
 	btScalar calculateTetDeformation(const btMatrix3x3& F) const;
 
@@ -95,6 +102,10 @@ private:
 	std::string makeDeformationString(DeformationLevel level) const;
 
 	PhysicsServerCommandProcessor* m_commandProcessor = nullptr;
+
+	btDynamicsWorld* m_dynamicsWorld = nullptr;
+
+
 
 };
 

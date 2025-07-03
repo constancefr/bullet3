@@ -128,6 +128,9 @@
 
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
+#include "Bullet3Common/b3EventDetector.h" // ADDITION
+extern b3EventDetector gEventDetector; // global
+
 int gInternalSimFlags = 0;
 bool gResetSimulation = 0;
 int gVRTrackingObjectUniqueId = -1;
@@ -2770,9 +2773,9 @@ void PhysicsServerCommandProcessor::createEmptyDynamicsWorld(int flags)
 		solver->setDeformableSolver(m_data->m_deformablebodySolver);
 		m_data->m_dynamicsWorld = new btDeformableMultiBodyDynamicsWorld(m_data->m_dispatcher, m_data->m_broadphase, solver, m_data->m_collisionConfiguration, m_data->m_deformablebodySolver);
 		
-		// ADDITION: assign server pointer ------------------------------------------------------------------------
+		// ADDITION: assign m_server and m_dynamics pointers ------------------------------------------------------
 		static_cast<btDeformableMultiBodyDynamicsWorld*>(m_data->m_dynamicsWorld)->m_server = this;
-		printf("m_server ADDED!!");
+		gEventDetector.setDynamicsWorld(m_data->m_dynamicsWorld);
 		// --------------------------------------------------------------------------------------------------------
 	}
 	else if (flags & RESET_USE_REDUCED_DEFORMABLE_WORLD)
