@@ -11,36 +11,8 @@ b3EventDetector gEventDetector; // define global instance
 
 b3EventDetector::b3EventDetector() {}
 
-//b3EventDetector::b3EventDetector(const PhysicsServerCommandProcessor* physicsServer) 
-    //: m_physicsServer(physicsServer)
-//{}
-
-
 void b3EventDetector::resetCurrentWholeBodyDeformation(const btSoftBody* sb) {
     m_bodyDeformationRecord[sb].currentWholeBodyDeformation = 0.0;
-}
-
-void b3EventDetector::setContacting(const btSoftBody* sb, bool isContacting) {
-    m_bodyDeformationRecord[sb].isContacting = isContacting;
-}
-
-ContactState b3EventDetector::detectContactEvent(const btSoftBody* sb) {
-    ContactState contactState;
-    auto& record = m_bodyDeformationRecord[sb];
-
-    if (record.isContacting && !record.wasContacting) { // new contact begins
-        contactState = ContactState::STARTS;
-    }
-    else if (!record.isContacting && record.wasContacting) { // contact ends
-        contactState = ContactState::ENDS;
-    }
-    else {
-        contactState = ContactState::CONTINUES;
-    }
-
-    record.wasContacting = record.isContacting;
-
-    return contactState;
 }
 
 void b3EventDetector::updateDeformationEvent(const btSoftBody* sb, int tetIndex, const btMatrix3x3& F) {
@@ -67,68 +39,6 @@ btScalar b3EventDetector::calculateTetDeformation(const btMatrix3x3& F) const {
     btScalar eNorm = std::sqrt(eNormSquared);
 
     return eNorm;
-}
-
-std::string b3EventDetector::checkForEvent() {
-    std::string output;
-
-    // iterates through bodies in database
-    for (auto it = m_bodyDeformationRecord.begin(); it != m_bodyDeformationRecord.end(); ++it) {
-        const btSoftBody* sb = it->first;
-        auto& record = m_bodyDeformationRecord[sb]; // retrieve this body's record
-        //std::string objName = gObjectNames[sb];
-        std::string objName = "?";
-
-        DeformationLevel peakLevel = classifyDeformation(record.peakDeformation);
-
-        // 1. Check for contact event
-        ContactState contactState = detectContactEvent(sb);
-        if (contactState == ContactState::STARTS) {
-            output += "[Event] <" + objName + "> enters contact with <plane>.\n";
-        }
-        else if (contactState == ContactState::ENDS) {
-
-            std::cout << "PEAK DEFORMATION: " << record.peakDeformation << "\n";
-
-            output += "[Event] <" + objName + "> separates from <plane> after contact with "
-                + makeDeformationString(peakLevel)
-                + " deformation.\n";
-
-            record.peakDeformation = 0.0; // reset
-        }
-        else if (contactState == ContactState::CONTINUES && record.stableCount > 3) { // determine stable count threshold empirically
-            output += "[Event] <" + objName + "> comes to a rest on <plane> with "
-                + makeDeformationString(peakLevel)
-                + " deformation.\n";
-        }
-
-        // 2. Update deformation peak
-        if (record.currentWholeBodyDeformation > record.peakDeformation 
-            && record.isContacting) {
-
-            record.peakDeformation = record.currentWholeBodyDeformation;
-        }
-
-        /*if (record.currentWholeBodyDeformation < record.lastWholeBodyDeformation && record.isContacting) {
-            std::cout << "Deformation is decreasing!\n";
-            std::cout << "current deform: " << record.currentWholeBodyDeformation << "\n";
-            std::cout << "last deform: " << record.lastWholeBodyDeformation << "\n";
-        }*/
-
-        //else if (record.currentWholeBodyDeformation == record.lastWholeBodyDeformation) {
-        if (abs(record.currentWholeBodyDeformation - record.lastWholeBodyDeformation) < 0.1
-            && record.isContacting) {
-            record.stableCount++;
-        }
-        else {
-            record.stableCount = 0; // reset
-        }
-
-        record.lastWholeBodyDeformation = record.currentWholeBodyDeformation;
-
-    }
-
-    return output;
 }
 
 DeformationLevel b3EventDetector::classifyDeformation(btScalar eNorm) const {
@@ -158,30 +68,53 @@ std::string b3EventDetector::makeDeformationString(DeformationLevel level) const
     }
 }
 
+void b3EventDetector::setContacting(const btSoftBody* sb, bool isContacting) {
+    m_bodyDeformationRecord[sb].isContacting = isContacting;
+}
+
+ContactState b3EventDetector::detectContactEvent(const btSoftBody* sb) {
+    ContactState contactState;
+    auto& record = m_bodyDeformationRecord[sb];
+
+    if (record.isContacting && !record.wasContacting) { // new contact begins
+        contactState = ContactState::STARTS;
+    }
+    else if (!record.isContacting && record.wasContacting) { // contact ends
+        contactState = ContactState::ENDS;
+    }
+    else {
+        contactState = ContactState::CONTINUES;
+    }
+
+    record.wasContacting = record.isContacting;
+
+    return contactState;
+}
+
+extern "C" const btScalar b3GetDeformationEventString()
+{
+    static btScalar result = gEventDetector.checkForEvent();
+    return result;
+}
+
+btScalar b3EventDetector::checkForEvent()
+{
+    btScalar deformationAmount = 0.0;
+
+    for (auto& pair : m_bodyDeformationRecord)
+    {
+        const ObjectRecord& rec = pair.second;
+        // We’ll just report the max of current vs previous
+        deformationAmount = std::max(deformationAmount, rec.currentWholeBodyDeformation);
+    }
+
+    return deformationAmount;
+}
+
+
 void b3EventDetector::setCommandProcessor(PhysicsServerCommandProcessor* proc) {
     m_commandProcessor = proc;
 }
-
-/*
-std::string b3EventDetector::getObjectName(int bodyUniqueId) const {
-    const PhysicsServerCommandProcessorInternalData* data = m_commandProcessor->getInternalData();
-
-    if (!data) {
-        return "unknown";
-    }
-
-    const UserDataHandleMap& 
-
-
-    
-    // auto it = gObjectNames.find(obj);
-    // if (it != gObjectNames.end()) {
-    //    return it->second;
-    // }
-    // return "?";
-    
-}
-*/
 
 void b3EventDetector::setObjectName(const btCollisionObject* obj, const std::string& name) {
     gObjectNames[obj] = name;

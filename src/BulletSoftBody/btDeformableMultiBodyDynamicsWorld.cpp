@@ -788,10 +788,11 @@ int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int ma
 
 	// ADDITION: detect contact event (contact starts, ends or continues) ----------
 	for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
-		std::string event = gEventDetector.checkForEvent();
+		//std::string event = gEventDetector.checkForEvent();
+		btScalar deformAmount = gEventDetector.checkForEvent();
 
-		if (!event.empty()) {
-			printf("%s", event.c_str()); // TODO: replace with call to logger
+		if (deformAmount != 0) {
+			printf("deformAmount (frombtDeform...Wolrd.cpp): %f", deformAmount); // TODO: replace with call to logger
 		}
 	}
 	// -----------------------------------------------------------------------------

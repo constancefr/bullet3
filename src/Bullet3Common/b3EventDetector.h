@@ -2,6 +2,8 @@
 #define B3_EVENT_DETECTOR_H
 
 #include "LinearMath/btMatrix3x3.h" // for deformation matrix F
+#include "LinearMath/btScalar.h"
+#include "BulletCollision/CollisionDispatch/btCollisionWorld.h" // to access members of btCollisionWorld
 #include <string>
 #include <unordered_map> // store key-value pairs
 #include <utility>
@@ -9,6 +11,7 @@
 class btSoftBody;
 class btCollisionObject;
 class PhysicsServerCommandProcessor;
+class btDeformableMultiBodyDynamicsWorld;
 
 enum class DeformationLevel {
 	NO,
@@ -22,7 +25,8 @@ enum class DeformationLevel {
 enum class ContactState {
 	STARTS,
 	CONTINUES,
-	ENDS
+	ENDS,
+	NO_CONTACT
 };
 
 class b3EventDetector {
@@ -36,28 +40,27 @@ public:
 
 	bool firstStep = true;
 
+	void updateDeformationEvent(const btSoftBody* sb, int tetIndex, const btMatrix3x3& F); // call in btSoftBody::updateDeformation()
+
+	void resetCurrentWholeBodyDeformation(const btSoftBody* sb);
+
 	void setContacting(const btSoftBody* sb, bool isContacting);
 
 	ContactState detectContactEvent(const btSoftBody* sb);
 
-	// call once per tet in btSoftBody::updateDeformation()
-	void updateDeformationEvent(const btSoftBody* sb, int tetIndex, const btMatrix3x3& F);
-
-	// returns a NL description if event detected
-	std::string checkForEvent();
-
-	void resetCurrentWholeBodyDeformation(const btSoftBody* sb);
-
-	void setCommandProcessor(PhysicsServerCommandProcessor* proc);
+	btScalar checkForEvent();
 
 	std::unordered_map<const btCollisionObject*, std::string> gObjectNames;
 
-	//std::string getObjectName(int bodyUniqueId) const;
-
 	void setObjectName(const btCollisionObject* obj, const std::string& name);
 
-	//const PhysicsServerCommandProcessor* m_physicsServer;
+	std::string getObjectName(const btCollisionObject* obj) const;
 
+	void setCommandProcessor(PhysicsServerCommandProcessor* proc);
+
+	void setDynamicsWorld(btDeformableMultiBodyDynamicsWorld* world);
+
+	btDeformableMultiBodyDynamicsWorld* m_dynamicsWorld;
 
 
 private:
@@ -77,16 +80,18 @@ private:
 	};
 
 	struct ObjectRecord {
+		bool isDeformable = false;
 		btScalar currentWholeBodyDeformation = 0.0;
 		btScalar lastWholeBodyDeformation = 0.0;
 		btScalar peakDeformation = 0.0;
 		bool isContacting = false;
 		bool wasContacting = false;
-		bool stableCount = 0;
+		int stableCount = 0;
 	};
 
 	// main object deformation database
 	std::unordered_map<const btSoftBody*, ObjectRecord> m_bodyDeformationRecord;
+	//std::unordered_map<const btCollisionObject*, ObjectRecord> m_objectRecords;
 
 	btScalar calculateTetDeformation(const btMatrix3x3& F) const;
 
@@ -97,7 +102,6 @@ private:
 	PhysicsServerCommandProcessor* m_commandProcessor = nullptr;
 
 };
-
 
 extern b3EventDetector gEventDetector; // declare global object
 

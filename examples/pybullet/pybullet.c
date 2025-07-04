@@ -1,5 +1,18 @@
 //#include "D:/dev/VisualLeakDetector/include/vld.h"
 
+// ADDITION ---------------------------------------------------
+#include "Bullet3Common/b3EventDetector.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+	const char* b3GetDeformationEventString();
+
+#ifdef __cplusplus
+}
+#endif
+// ------------------------------------------------------------
+
 #include "../../src/Bullet3Common/b3CustomLogger_C_API.h"
 
 #include "../SharedMemory/PhysicsClientC_API.h"
@@ -12599,6 +12612,34 @@ static PyObject* pybullet_calculateMassMatrix(PyObject* self, PyObject* args, Py
 	return Py_None;
 }
 
+// ADDITION ----------------------------------------------------------------------------------------------------------
+static PyObject* pybullet_getDeformationEvent(PyObject* self, PyObject* args, PyObject* keywds) {
+	int physicsClientId = 0;
+	static char* kwlist[] = { "physicsClientId", NULL };
+	b3PhysicsClientHandle sm = 0;
+
+	if (!PyArg_ParseTupleAndKeywords(args, keywds, "|i", kwlist, &physicsClientId))
+	{
+		return NULL;
+	}
+
+	sm = getPhysicsClient(physicsClientId);
+	if (sm == 0)
+	{
+		PyErr_SetString(SpamError, "Not connected to physics server.");
+		return NULL;
+	}
+
+	// Access the global event detector
+	btScalar deformationAmount = gEventDetector.checkForEvent();
+	return PyFloat_FromDouble(static_cast<double>(deformationAmount));
+
+	//const char*eventStr = b3GetDeformationEventString();
+	//return PyUnicode_FromString(eventStr);
+
+}
+
+// -------------------------------------------------------------------------------------------------------------------
 
 
 static PyMethodDef SpamMethods[] = {
@@ -13163,6 +13204,13 @@ static PyMethodDef SpamMethods[] = {
 	{"getAPIVersion", (PyCFunction)pybullet_getAPIVersion,
 	 METH_VARARGS | METH_KEYWORDS,
 	 "Get version of the API. Compatibility exists for connections using the same API version. Make sure both client and server use the same number of bits (32-bit or 64bit)."},
+
+	 // EXPOSING A NEW BINDING (constancefrachon) --------------------------------------------------
+	{"getDeformationEvent", (PyCFunction)pybullet_getDeformationEvent, METH_VARARGS | METH_KEYWORDS,
+	 "getDeformationEvent(physicsClientId=0)\n"
+	 "Retrieve a string describing any current deformation/contact event."},
+
+	 // --------------------------------------------------------------------------------------------
 
 	// todo(erwincoumans)
 	// saveSnapshot
