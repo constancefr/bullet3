@@ -7,6 +7,8 @@
 #include "PhysicsCommandProcessorInterface.h"
 #include "../Importers/ImportURDFDemo/UrdfParser.h"
 
+class btSoftBody; // ADDITION ----------------------------------
+
 struct SharedMemLines
 {
 	btVector3 m_from;
@@ -26,6 +28,10 @@ class PhysicsServerCommandProcessor : public CommandProcessorInterface
 	class btSoftMultiBodyDynamicsWorld* getSoftWorld();
 
 protected:
+	// ADDITION -------------------------------------------------------------------------------
+	bool processGetDeformationCommand(const SharedMemoryCommand& clientCmd, SharedMemoryStatus& serverStatusOut);
+	btSoftBody* getSoftBodyFromBodyUniqueId(int bodyUniqueId);
+	// ----------------------------------------------------------------------------------------
 	bool processStateLoggingCommand(const struct SharedMemoryCommand& clientCmd, struct SharedMemoryStatus& serverStatusOut, char* bufferServerToClient, int bufferSizeInBytes);
 	bool processRequestCameraImageCommand(const struct SharedMemoryCommand& clientCmd, struct SharedMemoryStatus& serverStatusOut, char* bufferServerToClient, int bufferSizeInBytes);
 	bool processSaveWorldCommand(const struct SharedMemoryCommand& clientCmd, struct SharedMemoryStatus& serverStatusOut, char* bufferServerToClient, int bufferSizeInBytes);

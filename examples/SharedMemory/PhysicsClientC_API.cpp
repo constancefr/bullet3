@@ -5,9 +5,41 @@
 #include "Bullet3Common/b3Matrix3x3.h"
 #include "Bullet3Common/b3Transform.h"
 #include "Bullet3Common/b3TransformUtil.h"
+#include "BulletCollision/CollisionDispatch/btCollisionObject.h"
+#include "BulletSoftBody/btSoftBody.h"
+#include "Bullet3Common/b3EventDetector.h"
 
 #include <string.h>
 #include "SharedMemoryCommands.h"
+
+// ADDITION ------------------------------------------------------------------
+B3_SHARED_API double b3GetDeformationAmount(b3PhysicsClientHandle physClient, int bodyUniqueId)
+{
+	PhysicsClient* cl = (PhysicsClient*)physClient;
+	b3Assert(cl);
+	b3Assert(cl->canSubmitCommand()); 
+
+	struct SharedMemoryCommand* command = cl->getAvailableSharedMemoryCommand();
+	b3Assert(command);
+
+	command->m_type = CMD_GET_DEFORMATION;
+	command->m_getDeformationArguments.m_bodyUniqueId = bodyUniqueId;
+
+	//cl->submitClientCommand(command);
+	//const SharedMemoryStatus* status = cl->processServerStatus();
+	b3SharedMemoryStatusHandle statusHandle = b3SubmitClientCommandAndWaitStatus(physClient, (b3SharedMemoryCommandHandle)command);
+	const SharedMemoryStatus* status = (const SharedMemoryStatus*)statusHandle;
+
+	if (status && status->m_type == CMD_STATUS_GET_DEFORMATION_COMPLETED)
+	{
+		return status->m_deformationData.m_deformationValue;
+	}
+
+	return -1;  // failure
+}
+
+
+// ---------------------------------------------------------------------------
 
 B3_SHARED_API b3SharedMemoryCommandHandle b3LoadSdfCommandInit(b3PhysicsClientHandle physClient, const char* sdfFileName)
 {

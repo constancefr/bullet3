@@ -2953,9 +2953,9 @@ bool btSoftBody::checkDeformableFaceContact(const btCollisionObjectWrapper* colO
 			dst = results.distance - csh->getMargin() - margin;
 
 			// ADDITIONS --------------------------------
-			printf("(2) Is in contact!\n");
-			//printf("m_scontacts: %d\n", this->m_scontacts);
-			gEventDetector.setContacting(this, true);
+			//printf("(2) Is in contact!\n");
+			////printf("m_scontacts: %d\n", this->m_scontacts);
+			//gEventDetector.setContacting(this, true);
 			// ------------------------------------------
 
 			return true;
@@ -2981,7 +2981,7 @@ bool btSoftBody::checkDeformableFaceContact(const btCollisionObjectWrapper* colO
 	// ADDITIONS --------------------------------
 	//printf("(3) Is in contact!\n");
 	//printf("m_scontacts: %d\n", this->m_scontacts.size());
-	gEventDetector.setContacting(this, true);
+	//gEventDetector.setContacting(this, true);
 	// ------------------------------------------
 
 	return true;
@@ -3584,6 +3584,11 @@ static btScalar Dot4(const btVector4& a, const btVector4& b)
 void btSoftBody::updateDeformation()
 {
 	btQuaternion q;
+
+	// ADDITION ---------------------------------
+	gEventDetector.resetCurrentWholeBodyDeformation(this);
+	// ------------------------------------------
+
 	for (int i = 0; i < m_tetras.size(); ++i) // loops through all tets
 	{
 		btSoftBody::Tetra& t = m_tetras[i];
@@ -3598,9 +3603,8 @@ void btSoftBody::updateDeformation()
 		btSoftBody::TetraScratch& s = m_tetraScratches[i];
 		s.m_F = t.m_F; // updates deformation gradient
 
-		// ADDITIONS --------------------------------
-		gEventDetector.resetCurrentWholeBodyDeformation(this);
-		gEventDetector.updateDeformationEvent(this, i, t.m_F); // this = current btSoftBody, i = current tet index
+		// ADDITION ---------------------------------
+		gEventDetector.updateDeformationEvent(this, t.m_F); // this = current btSoftBody, i = current tet index
 
 		// REMOVE THIS (checks for event for each tet rather than per object)
 		//std::string event = gEventDetector.checkForEvent();
@@ -3638,11 +3642,12 @@ void btSoftBody::updateDeformation()
 	//// ------------------------------------------
 	
 	// ADDITIONS --------------------------------
-
-	std::string event = gEventDetector.checkForEvent();
-	if (!event.empty()) {
-		printf("%s", event.c_str()); // TODO: replace with call to logger
-	}
+	float deformation = gEventDetector.returnDeformation(this);
+	//std::cout << "Deformation: " << deformation << "\n";
+	//std::string event = gEventDetector.checkForEvent();
+	//if (!event.empty()) {
+	//	printf("%s", event.c_str()); // TODO: replace with call to logger
+	//}
 	// ------------------------------------------
 
 }

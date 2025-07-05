@@ -65,6 +65,11 @@ enum EnumSdfArgsUpdateFlags
 	SDF_ARGS_FILE_NAME = 1,
 };
 
+//struct Deformation // ADDITION ---------------------------------------------
+//{
+//	float m_deformation;
+//};
+
 struct SdfArgs
 {
 	char m_sdfFileName[MAX_URDF_FILENAME_LENGTH];
@@ -1176,6 +1181,7 @@ struct SharedMemoryCommand
 	int m_updateFlags;
 
 	union {
+		struct GetDeformationArguments m_getDeformationArguments; // ADDITION ------------------------------------------------
 		struct UrdfArgs m_urdfArguments;
 		struct SdfArgs m_sdfArguments;
 		struct MjcfArgs m_mjcfArguments;
@@ -1267,6 +1273,7 @@ struct SharedMemoryStatus
 	int m_updateFlags;
 
 	union {
+		struct DeformationData m_deformationData; 
 		struct BulletDataStreamArgs m_dataStreamArguments;
 		struct SdfLoadedArgs m_sdfLoadedArgs;
 		struct SendActualStateArgs m_sendActualStateArgs;

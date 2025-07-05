@@ -570,6 +570,20 @@ const SharedMemoryStatus* PhysicsClientSharedMemory::processServerStatus()
 
 		switch (serverCmd.m_type)
 		{
+			// ADDITION --------------------------------------------------------------
+			case CMD_STATUS_GET_DEFORMATION_COMPLETED:
+			{
+				break;
+			}
+
+			case CMD_STATUS_GET_DEFORMATION_FAILED:
+			{
+				B3_PROFILE("CMD_STATUS_GET_DEFORMATION_FAILED");
+				b3Warning("getDeformationAmountF");
+				break;
+			}
+			// -----------------------------------------------------------------------
+
 			case CMD_CLIENT_COMMAND_COMPLETED:
 			{
 				B3_PROFILE("CMD_CLIENT_COMMAND_COMPLETED");

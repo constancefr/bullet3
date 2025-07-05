@@ -40,6 +40,10 @@ extern "C"
 {
 #endif
 
+	// ADDITION -----------------------------------------------
+	B3_SHARED_API double b3GetDeformationAmount(b3PhysicsClientHandle physClient, int bodyUniqueId);
+	// --------------------------------------------------------
+
 	///b3DisconnectSharedMemory will disconnect the client from the server and cleanup memory.
 	B3_SHARED_API void b3DisconnectSharedMemory(b3PhysicsClientHandle physClient);
 

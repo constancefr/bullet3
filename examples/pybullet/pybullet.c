@@ -95,6 +95,34 @@ b3PhysicsClientHandle getPhysicsClient(int physicsClientId)
 	return 0;
 }
 
+// ADDITION ------------------------------------------------------------------------------------------------
+static PyObject* pybullet_getDeformationAmount(PyObject* self, PyObject* args, PyObject* keywds)
+{
+	b3PhysicsClientHandle sm = 0;
+	int physicsClientId = 0;
+	int bodyUniqueId = -1;
+
+	static char* kwlist[] = {"bodyUniqueId", "physicsClientId", NULL};
+
+	if (!PyArg_ParseTupleAndKeywords(args, keywds, "i|i", kwlist, &bodyUniqueId, &physicsClientId))
+	{
+		return NULL;
+	}
+
+	sm = getPhysicsClient(physicsClientId);
+	if (sm == 0)
+	{
+		PyErr_SetString(SpamError, "Not connected to physics server.");
+		return NULL;
+	}
+
+	double deformation = b3GetDeformationAmount(sm, bodyUniqueId);
+
+	return PyFloat_FromDouble(deformation);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+
 static double pybullet_internalGetFloatFromSequence(PyObject* seq, int index)
 {
 	double v = 0.0;
@@ -12602,6 +12630,11 @@ static PyObject* pybullet_calculateMassMatrix(PyObject* self, PyObject* args, Py
 
 
 static PyMethodDef SpamMethods[] = {
+
+	// ADDITION ------------------------------------------------------------------
+	{"getDeformationAmount", (PyCFunction)pybullet_getDeformationAmount, METH_VARARGS | METH_KEYWORDS, 
+	"Get the deformation amount for a soft body."},
+	// ---------------------------------------------------------------------------
 
 	{"connect", (PyCFunction)pybullet_connectPhysicsServer, METH_VARARGS | METH_KEYWORDS,
 	 "connect(method, key=SHARED_MEMORY_KEY, options='')\n"

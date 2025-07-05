@@ -687,9 +687,9 @@ void btDeformableMultiBodyDynamicsWorld::removeCollisionObject(btCollisionObject
 int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
 {
 	// ADDITION: clear contact flags before updates inside sim step ----------------
-	for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
-		gEventDetector.setContacting(m_softBodies[i], false);
-	}
+	//for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
+	//	gEventDetector.setContacting(m_softBodies[i], false);
+	//}
 	// -----------------------------------------------------------------------------
 
 
@@ -753,9 +753,9 @@ int btDeformableMultiBodyDynamicsWorld::stepSimulation(btScalar timeStep, int ma
 	clearForces();
 
 	// ADDITION: detect contact event (contact starts, ends or continues) ----------
-	for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
-		gEventDetector.detectContactEvent(m_softBodies[i]);
-	}
+	//for (int i = 0; i < m_softBodies.size(); ++i) { // iterate through soft bodies
+	//	gEventDetector.detectContactEvent(m_softBodies[i]);
+	//}
 	// -----------------------------------------------------------------------------
 
 

@@ -143,6 +143,8 @@ btScalar gRhsClamp = 1.f;
 
 #include "../CommonInterfaces/CommonFileIOInterface.h"
 
+#include "Bullet3Common/b3EventDetector.h" // ADDITION ------------------------------------------------
+
 class b3ThreadPool
 {
 public:
@@ -2121,6 +2123,37 @@ void MyContactEndedCallback(btPersistentManifold* const& manifold)
 {
 	//	printf("ended\n");
 }
+
+// ADDITION -------------------------------------------------------------------------------
+bool PhysicsServerCommandProcessor::processGetDeformationCommand(const SharedMemoryCommand& clientCmd, SharedMemoryStatus& serverStatusOut)
+{
+	int bodyId = clientCmd.m_getDeformationArguments.m_bodyUniqueId;
+
+	btSoftBody* sb = getSoftBodyFromBodyUniqueId(bodyId);
+	if (sb)
+	{
+		double deformation = gEventDetector.returnDeformation(sb);
+		serverStatusOut.m_type = CMD_STATUS_GET_DEFORMATION_COMPLETED;
+		serverStatusOut.m_deformationData.m_deformationValue = deformation;
+	}
+	else
+	{
+		serverStatusOut.m_type = CMD_STATUS_GET_DEFORMATION_FAILED;
+	}
+	return true;
+}
+
+btSoftBody* PhysicsServerCommandProcessor::getSoftBodyFromBodyUniqueId(int bodyUniqueId)
+{
+	InternalBodyHandle* bodyHandle = m_data->m_bodyHandles.getHandle(bodyUniqueId);
+	if (bodyHandle && bodyHandle->m_softBody)
+	{
+		btSoftBody* sb = bodyHandle->m_softBody;
+		return sb;
+	}
+	return nullptr;
+}
+// ----------------------------------------------------------------------------------------
 
 void PhysicsServerCommandProcessor::processCollisionForces(btScalar timeStep)
 {
@@ -15092,6 +15125,11 @@ bool PhysicsServerCommandProcessor::processCommand(const struct SharedMemoryComm
 	//consume the command
 	switch (clientCmd.m_type)
 	{
+		case CMD_GET_DEFORMATION:
+		{
+			hasStatus = processGetDeformationCommand(clientCmd, serverStatusOut);
+			break;
+		}
 		case CMD_STATE_LOGGING:
 		{
 			hasStatus = processStateLoggingCommand(clientCmd, serverStatusOut, bufferServerToClient, bufferSizeInBytes);

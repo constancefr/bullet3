@@ -42,6 +42,7 @@
 
 enum EnumSharedMemoryClientCommand
 {
+	CMD_GET_DEFORMATION, // ADDITION -------------------------------------------------
 	CMD_INVALID = 0,
 	CMD_LOAD_SDF,
 	CMD_LOAD_URDF,
@@ -126,6 +127,8 @@ enum EnumSharedMemoryClientCommand
 
 enum EnumSharedMemoryServerStatus
 {
+	CMD_STATUS_GET_DEFORMATION_COMPLETED, // ADDITION ------------------------------------------------
+	CMD_STATUS_GET_DEFORMATION_FAILED,    // ADDITION ------------------------------------------------
 	CMD_SHARED_MEMORY_NOT_INITIALIZED = 0,
 	CMD_WAITING_FOR_CLIENT_COMMAND,
 	//CMD_CLIENT_COMMAND_COMPLETED is a generic 'completed' status that doesn't need special handling on the client
@@ -288,6 +291,18 @@ enum b3JointInfoFlags
 	eJointChangeChildFramePosition = 2,
 	eJointChangeChildFrameOrientation = 4,
 };
+
+// ADDITION ------------------------------------------------
+struct GetDeformationArguments
+{
+	int m_bodyUniqueId;
+};
+
+struct DeformationData
+{
+	double m_deformationValue;
+};
+// ---------------------------------------------------------
 
 struct b3JointInfo
 {
