@@ -1952,8 +1952,7 @@ static PyObject* pybullet_setPhysicsEngineParameter(PyObject* self, PyObject* ar
 // loadURDF(pos_x, pos_y, pos_z, orn_x, orn_y, orn_z, orn_w)
 static PyObject* pybullet_loadURDF(PyObject* self, PyObject* args, PyObject* keywds)
 {
-	printf("LOADING URDF!");
-	b3LogEvent("test log.");
+	//b3LogEvent("test log."); // ADDITION: testing custom log connection
 
 	int physicsClientId = 0;
 	int flags = 0;
